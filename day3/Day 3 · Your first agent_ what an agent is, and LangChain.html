@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 3 · Your first agent: what an agent is, and LangChain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: study notes — sticky lesson index on the left, one readable column; coloured stripes mark analogies (amber), design lens (teal) and warnings (red). */
+:root{
+  --bg:#F5F7F8;
+  --paper:#FFFFFF;
+  --ink:#16222B;
+  --muted:#5B6B76;
+  --line:#D7DFE3;
+  --accent:#0E7C6B;          /* teal: design lens, key path */
+  --accent-soft:#E2F3EF;
+  --warm:#B86A00;            /* amber: analogies */
+  --warm-soft:#FBF0DF;
+  --danger:#B3261E;
+  --danger-soft:#FBE7E5;
+  --code-bg:#0F1A21;
+  --code-ink:#DCE6EA;
+  --panel:#F0F4F5;
+  --font-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151A; --paper:#141E25; --ink:#E4ECEF; --muted:#9AAAB3; --line:#2A3943;
+    --accent:#4CC5AE; --accent-soft:#16332E; --warm:#E7A64A; --warm-soft:#33270F;
+    --danger:#F08B83; --danger-soft:#3A1C1A; --code-bg:#0A1116; --code-ink:#DCE6EA; --panel:#1B2830;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151A; --paper:#141E25; --ink:#E4ECEF; --muted:#9AAAB3; --line:#2A3943;
+  --accent:#4CC5AE; --accent-soft:#16332E; --warm:#E7A64A; --warm-soft:#33270F;
+  --danger:#F08B83; --danger-soft:#3A1C1A; --code-bg:#0A1116; --code-ink:#DCE6EA; --panel:#1B2830;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.62}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+nav.toc{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow:auto;font-size:14.5px;padding-right:6px}
+nav.toc .tt{font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.02em;margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+nav.toc a{display:block;padding:5px 10px;border-radius:6px;color:var(--ink);text-decoration:none;border-left:3px solid transparent}
+nav.toc a:hover{background:var(--panel);border-left-color:var(--accent)}
+nav.toc .sub a{padding-left:24px;color:var(--muted);font-size:13.5px}
+main{min-width:0}
+header.hero{padding:8px 0 28px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.eyebrow{font-family:var(--font-mono);font-size:13px;color:var(--accent);letter-spacing:.04em;text-transform:uppercase}
+h1,h2,h3,h4{font-family:var(--font-display);text-wrap:balance;line-height:1.2}
+h1{font-size:42px;font-weight:800;margin:6px 0 12px}
+h2{font-size:30px;font-weight:800;margin:56px 0 10px;padding-top:12px}
+h3{font-size:22px;font-weight:600;margin:34px 0 8px}
+h4{font-size:18px;font-weight:600;margin:22px 0 6px}
+.lede{font-size:19px;color:var(--muted);max-width:68ch;margin:0}
+p,li{max-width:70ch}
+.lessonno{display:inline-block;font-family:var(--font-mono);font-size:14px;color:var(--paper);background:var(--accent);border-radius:6px;padding:2px 9px;margin-right:10px;vertical-align:middle;position:relative;top:-3px}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:18px 0 0;padding:0;list-style:none}
+.map li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:15px}
+.map li b{font-family:var(--font-mono);color:var(--accent);margin-right:6px}
+.box{border-radius:10px;padding:14px 18px;margin:18px 0;border-left:5px solid;background:var(--paper)}
+.box > :first-child{margin-top:0}
+.box > :last-child{margin-bottom:0}
+.box .tag{display:block;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+.analogy{border-color:var(--warm);background:var(--warm-soft)}
+.analogy .tag{color:var(--warm)}
+.lens{border-color:var(--accent);background:var(--accent-soft)}
+.lens .tag{color:var(--accent)}
+.warn{border-color:var(--danger);background:var(--danger-soft)}
+.warn .tag{color:var(--danger)}
+.remember{border-color:var(--ink);background:var(--paper);border-left-width:5px;box-shadow:0 1px 0 var(--line)}
+.remember ul{margin:4px 0 0;padding-left:20px}
+.yours{display:inline-block;font-family:var(--font-mono);font-size:11.5px;background:var(--warm);color:var(--paper);border-radius:4px;padding:1px 7px;margin-left:6px;vertical-align:middle;text-transform:none;letter-spacing:0}
+.tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:15.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-display);font-weight:600;background:var(--panel);font-size:15px}
+tr:last-child td{border-bottom:0}
+td code,p code,li code,th code{font-family:var(--font-mono);font-size:.86em;background:var(--panel);padding:1px 5px;border-radius:4px;word-break:break-word}
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--font-mono);font-size:14px;line-height:1.55;margin:16px 0}
+pre code{font-family:inherit;background:none;padding:0}
+.k{color:#7FC8FF}.s{color:#B5E48C}.c{color:#7C8F99;font-style:italic}.n{color:#F5B971}
+figure{margin:22px 0;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 10px;overflow-x:auto}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:8px;max-width:none}
+svg.dg{display:block;width:100%;max-width:100%;height:auto;min-width:560px;color:var(--ink)}
+svg.dg text{fill:currentColor;font-family:var(--font-body);font-size:13px}
+svg.dg .t-s{font-size:11.5px;fill:var(--muted)}
+svg.dg .t-b{font-weight:700}
+svg.dg .t-m{font-family:var(--font-mono);font-size:12px}
+svg.dg .b{fill:var(--panel);stroke:currentColor;stroke-width:1.2}
+svg.dg .ba{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.8}
+svg.dg .bw{fill:var(--warm-soft);stroke:var(--warm);stroke-width:1.5}
+svg.dg .bd{fill:var(--danger-soft);stroke:var(--danger);stroke-width:1.5}
+svg.dg .ln{stroke:currentColor;stroke-width:1.4;fill:none}
+svg.dg .lna{stroke:var(--accent);stroke-width:2;fill:none}
+svg.dg .dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:5 4}
+svg.dg .bar{fill:var(--accent)}
+svg.dg .bar2{fill:var(--warm)}
+svg.dg .ah{fill:currentColor}
+svg.dg .aha{fill:var(--accent)}
+details{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:12px 0;padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:12px 0}
+details[open]{padding-bottom:12px}
+.qa dt{font-weight:700;margin-top:12px}
+.qa dd{margin:4px 0 0 0;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.card h4{margin-top:0}
+/* ---------- interactive widgets ---------- */
+.sim{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin:22px 0;overflow:hidden}
+.sim-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sim-head .ttl{font-family:var(--font-display);font-weight:600;font-size:16px}
+.sim-head .live{font-family:var(--font-mono);font-size:11.5px;color:var(--paper);background:var(--accent);border-radius:4px;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase}
+.sim-body{padding:14px 16px 16px}
+.sim label{font-weight:700;font-size:14.5px}
+.sim textarea,.sim input[type=text]{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical}
+.sim textarea:focus,.sim input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-size:14.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent);color:var(--paper);border-radius:8px;padding:7px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:12px 0;min-height:34px;font-family:var(--font-mono);font-size:14px}
+.chip{padding:3px 6px;border-radius:5px;white-space:pre;border:1px solid transparent}
+.chip.c0{background:#DDEFFC;color:#11344F}.chip.c1{background:#FBE3C8;color:#4A2A00}.chip.c2{background:#DDF3E4;color:#123D22}.chip.c3{background:#F3DDF3;color:#3F1440}.chip.c4{background:#E7E3FB;color:#231A55}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.stat b{display:block;font-family:var(--font-display);font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.note{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+.tbar{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;margin:5px 0;font-size:14.5px}
+.tbar .track{background:var(--panel);border-radius:4px;height:20px;overflow:hidden}
+.tbar .fill{height:100%;background:var(--accent);border-radius:4px;transition:width .35s ease}
+.tbar .pct{font-family:var(--font-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.tbar.hit .fill{background:var(--warm)}
+input[type=range]{width:220px;accent-color:var(--accent)}
+.sentence{font-size:18px;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px dashed var(--line);min-height:46px}
+.sentence .new{background:var(--warm-soft);color:var(--warm);font-weight:700;border-radius:4px;padding:0 3px}
+.status{font-size:15px;padding:8px 12px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent);margin-top:10px;min-height:42px}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.opt{font:inherit;font-size:15px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.opt.right{background:var(--accent-soft);border-color:var(--accent)}
+.opt.wrong{background:var(--danger-soft);border-color:var(--danger)}
+.toggles{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 18px;margin:8px 0}
+.toggles label{font-weight:400;display:flex;gap:8px;align-items:flex-start}
+.result{font-family:var(--font-mono);font-size:13.5px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:10px 12px;white-space:pre-wrap;margin-top:8px}
+.cw{display:flex;height:46px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:10px 0;background:var(--bg)}
+.cw div{display:flex;align-items:center;justify-content:center;font-size:12.5px;white-space:nowrap;overflow:hidden;transition:width .3s ease}
+.cw .sys{background:var(--accent-soft)}.cw .his{background:var(--panel)}.cw .doc{background:var(--warm-soft)}.cw .ans{background:var(--accent);color:var(--paper)}.cw .over{background:var(--danger);color:#fff}
+.hist{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+.hist div{font-size:14px;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg)}
+.hist .r-system{border-left:4px solid var(--ink)}.hist .r-user{border-left:4px solid var(--accent)}.hist .r-assistant{border-left:4px solid var(--warm)}
+.hist .fresh{animation:pop .5s ease}
+@keyframes pop{from{transform:translateY(-6px);opacity:.2}to{transform:none;opacity:1}}
+/* svg highlight + flowing arrows */
+svg.dg .b,svg.dg .ba,svg.dg .bw,svg.dg .bd{transition:fill .25s ease,stroke .25s ease,stroke-width .25s ease}
+svg.dg .on{fill:var(--warm-soft)!important;stroke:var(--warm)!important;stroke-width:3!important}
+svg.dg.flow .ln,svg.dg.flow .lna{stroke-dasharray:7 5;animation:dash 1.1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion: reduce){
+  svg.dg.flow .ln,svg.dg.flow .lna{animation:none;stroke-dasharray:none}
+  .tbar .fill,.cw div{transition:none}
+  .hist .fresh{animation:none}
+}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14.5px}
+@media (max-width: 900px){
+  .shell{grid-template-columns:1fr;gap:10px;padding:20px 16px 60px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--paper)}
+  nav.toc .sub{display:none}
+  h1{font-size:32px} h2{font-size:25px}
+  .two{grid-template-columns:1fr}
+}
+/* ---------- Day 1 tutorial additions ---------- */
+:root{--info:#1F5FA8;--info-soft:#E7F0FA}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--info:#7FB2EE;--info-soft:#15263A}}
+:root[data-theme="dark"]{--info:#7FB2EE;--info-soft:#15263A}
+.real{border-color:var(--info);background:var(--info-soft)}
+.real .tag{color:var(--info)}
+.oneline{font-size:19px;font-family:var(--font-display);font-weight:600;border-left:5px solid var(--accent);padding:4px 0 4px 14px;margin:6px 0 16px;max-width:none}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.meta span{font-family:var(--font-mono);font-size:12.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted)}
+.meta b{color:var(--ink)}
+/* video player */
+.vid{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin:22px 0;overflow:hidden}
+.vid-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.vid-head .ttl{font-family:var(--font-display);font-weight:600;font-size:16px}
+.vid-head .live{font-family:var(--font-mono);font-size:11.5px;color:var(--paper);background:var(--warm);border-radius:4px;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase}
+.vid-stage{padding:14px 14px 4px;overflow-x:auto;position:relative}
+.vid-stage svg.dg{min-width:600px}
+.vid-cap{min-height:56px;margin:4px 14px 10px;padding:10px 14px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);font-size:16.5px;max-width:none}
+.vid-bar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.vid-play{min-width:92px}
+.vid-prog{flex:1;min-width:140px;height:8px;background:var(--line);border-radius:4px;cursor:pointer;position:relative}
+.vid-prog div{height:100%;width:0;background:var(--warm);border-radius:4px}
+.vid-time{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.vid-bar label{font-size:14px;display:flex;gap:6px;align-items:center}
+svg.dg .ve{opacity:0;transition:opacity .55s ease,transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .ve.show{opacity:1}
+svg.dg .grow{transform-box:fill-box;transform-origin:0 50%;transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .spin{transform-box:view-box;transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .big{font-size:24px;font-family:var(--font-mono)}
+svg.dg .t-l{font-size:15px}
+svg.dg .t-red{fill:var(--danger);font-weight:700}
+svg.dg .t-ok{fill:var(--accent);font-weight:700}
+/* quiz */
+.quiz{margin:26px 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden}
+.quiz-head{padding:10px 16px;background:var(--accent-soft);border-bottom:1px solid var(--line);font-family:var(--font-display);font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.quiz-head span{font-family:var(--font-mono);font-size:12.5px;color:var(--accent);font-weight:600}
+.mcq{padding:14px 16px;border-bottom:1px solid var(--line)}
+.mcq:last-child{border-bottom:0}
+.mcq .q{font-weight:700;margin:0 0 8px;max-width:none}
+.mcq .choices{display:grid;gap:6px}
+.mcq .choices button{font:inherit;font-size:15.5px;text-align:left;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.mcq .choices button b{font-family:var(--font-mono);color:var(--muted);min-width:1.2em}
+.mcq .choices button:hover:not(:disabled){border-color:var(--accent)}
+.mcq .choices button.right{background:var(--accent-soft);border-color:var(--accent)}
+.mcq .choices button.wrong{background:var(--danger-soft);border-color:var(--danger)}
+.mcq .choices button:disabled{cursor:default}
+.mcq .why{display:none;margin-top:10px;font-size:15px;padding:8px 12px;border-radius:8px;background:var(--panel);max-width:none}
+.mcq.done .why{display:block}
+.mcq .retry{display:none;margin-top:8px}
+.mcq.done .retry{display:inline-block}
+.score{position:sticky;bottom:12px;margin-top:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+.score b{font-family:var(--font-display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
+.score .track{height:6px;background:var(--panel);border-radius:3px;margin-top:6px;overflow:hidden}
+.score .track div{height:100%;width:0;background:var(--accent);transition:width .4s ease}
+.agenda{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:ag}
+.agenda li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:15px}
+.agenda li a{text-decoration:none;color:var(--ink)}
+.agenda li b{font-family:var(--font-mono);color:var(--accent);margin-right:6px}
+.agenda li small{display:block;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion: reduce){svg.dg .ve,svg.dg .grow,svg.dg .spin{transition:opacity .2s linear}}
+
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc" aria-label="Topics">
+  <p class="tt">Day 3 tutorial</p>
+  <ol>
+    <li><a href="#start">Today at a glance</a></li>
+    <li><a href="#t1">1 · Chatbot vs agent</a></li>
+    <li><a href="#t2">2 · The four parts of an agent</a></li>
+    <li><a href="#t3">3 · The agent loop</a></li>
+    <li><a href="#t4">4 · Three levels of AI</a></li>
+    <li><a href="#t5">5 · Agent or not?</a></li>
+    <li><a href="#t6">6 · Why LangChain</a></li>
+    <li><a href="#t7">7 · LangChain basics</a></li>
+    <li><a href="#t8">8 · Testing your assistant</a></li>
+    <li><a href="#build">Today's build + your 30%</a></li>
+    <li><a href="#wrap">Summary</a></li>
+  </ol>
+  <div class="score" id="score" aria-live="polite">Quiz score<br><b id="sc-n">0</b> / <span id="sc-t">16</span> correct<div class="track"><div id="sc-bar"></div></div></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Ai Agents Workshop · Level 2 Single agent · Day 3 (session 1 of 3)</div>
+  <h1>Your first agent: what an agent is, and LangChain</h1>
+  <p class="lede">A chatbot <em>talks</em>. An agent <em>gets things done</em>. Today you learn what turns a chatbot into an agent, how an agent thinks in a loop, when you should (and shouldn't) use one, and how LangChain makes the code shorter. You finish with the Sweet Crumbs assistant rebuilt in LangChain, and a test file that checks it.</p>
+  <div class="meta"><span><b>2 hours</b> · 1 session</span><span>Trainer <b>70%</b> · Students <b>30%</b></span><span>Runs in <b>Google Colab</b></span><span>Case study: <b>Sweet Crumbs Home Bakery</b></span></div>
+</header>
+
+<section id="start">
+  <h2>Today at a glance</h2>
+  <p>Topics 1–5 are ideas: what an agent is and how it works. Topics 6–8 are code: LangChain and testing. From today, students do <strong>30%</strong> of the session themselves.</p>
+  <ol class="agenda">
+    <li><a href="#t1"><b>01</b>Chatbot vs agent<small>Talking vs doing · 10 min</small></a></li>
+    <li><a href="#t2"><b>02</b>The four parts of an agent<small>Brain, instructions, tools, memory · 10 min</small></a></li>
+    <li><a href="#t3"><b>03</b>The agent loop<small>Think → act → observe → repeat · 15 min</small></a></li>
+    <li><a href="#t4"><b>04</b>Three levels of AI<small>Traditional, generative, agentic · 10 min</small></a></li>
+    <li><a href="#t5"><b>05</b>Agent or not?<small>Pick the simplest thing that works · 10 min</small></a></li>
+    <li><a href="#t6"><b>06</b>Why LangChain<small>One adapter for every model · 10 min</small></a></li>
+    <li><a href="#t7"><b>07</b>LangChain basics<small>Models, templates, chains · 20 min</small></a></li>
+    <li><a href="#t8"><b>08</b>Testing your assistant<small>tests.csv and pass rate · 15 min</small></a></li>
+  </ol>
+  <div class="box real"><span class="tag">Where we are in the case study</span>
+    <p>Level 1 gave Sweet Crumbs a chatbot that knows the menu and remembers the customer. Today we learn what it still lacks to become an <strong>agent</strong>, rebuild it with LangChain, and write its first tests. Tomorrow (Day 4) it gets <strong>tools</strong> and starts acting by itself.</p>
+  </div>
+</section>
+
+<!-- ============ T1 ============ -->
+<section id="t1">
+  <h2><span class="lessonno">01</span>Chatbot vs agent</h2>
+  <p class="oneline">A chatbot answers with words. An agent is given a goal and takes actions until the goal is done.</p>
+  <p>Ask a chatbot "Cancel my order" and it tells you <em>how</em> to cancel. Ask an agent and it <em>cancels it</em>: it looks up the order, calls the cancel system, checks it worked and then tells you. The difference is not a smarter model; it's that the agent is <strong>allowed to use tools</strong> and <strong>decides the steps itself</strong>.</p>
+  <div class="sim" id="sim-cv">
+    <div class="sim-head"><span class="ttl">Same request, chatbot vs agent</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="opts" id="cv-o" role="group" aria-label="Customer request"></div>
+      <div class="two">
+        <div class="card"><h4>Chatbot</h4><div id="cv-c"></div></div>
+        <div class="card"><h4>Agent</h4><div id="cv-a"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Many food-delivery and banking apps started with chatbots that only explained policies. Newer assistants can actually check your order status, start a refund or block a card, because they are connected to the company's systems. That connection is what makes them agents.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>receptionist</strong> tells you which counter books train tickets. A <strong>personal assistant</strong> books the ticket, checks the PNR and sends it to you. Same knowledge; only one of them does the work.</p>
+  </div>
+  <div class="vid" data-vid="v1">
+    <div class="vid-head"><span class="ttl">Watch: talking vs doing</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 230" role="img" aria-label="Animation: a chatbot explains how to cancel an order, while an agent finds the order, cancels it, checks and confirms."><defs><marker id="mv1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v1-req" class="ve"><rect x="20" y="96" width="170" height="56" rx="8" class="b"/><text x="105" y="120" text-anchor="middle" class="t-b">"Cancel my order"</text><text x="105" y="138" text-anchor="middle" class="t-s">customer</text></g><g id="v1-l1" class="ve"><text x="250" y="24" class="t-s">CHATBOT</text><path class="ln" d="M190 112 H220 V50 H248" marker-end="url(#mv1)"/></g><g id="v1-cb" class="ve" ><rect x="250" y="30" width="490" height="46" rx="8" class="b"/><text x="495.0" y="58.0" text-anchor="middle" class="t-b">"To cancel, open My Orders and tap Cancel."</text></g><g id="v1-l2" class="ve"><text x="250" y="122" class="t-s">AGENT</text><path class="ln" d="M190 136 H220 V160 H248" marker-end="url(#mv1)"/></g><g id="v1-s1" class="ve" ><rect x="250" y="136" width="100" height="46" rx="8" class="bw"/><text x="300.0" y="164.0" text-anchor="middle" class="t-b">find order</text></g><g id="v1-sa1" class="ve"><line class="ln" x1="350" y1="159" x2="360" y2="159" marker-end="url(#mv1)"/></g><g id="v1-s2" class="ve" ><rect x="362" y="136" width="100" height="46" rx="8" class="bw"/><text x="412.0" y="164.0" text-anchor="middle" class="t-b">cancel it</text></g><g id="v1-sa2" class="ve"><line class="ln" x1="462" y1="159" x2="472" y2="159" marker-end="url(#mv1)"/></g><g id="v1-s3" class="ve" ><rect x="474" y="136" width="100" height="46" rx="8" class="bw"/><text x="524.0" y="164.0" text-anchor="middle" class="t-b">check</text></g><g id="v1-sa3" class="ve"><line class="ln" x1="574" y1="159" x2="584" y2="159" marker-end="url(#mv1)"/></g><g id="v1-done" class="ve" ><rect x="586" y="136" width="154" height="46" rx="8" class="ba"/><text x="663.0" y="164.0" text-anchor="middle" class="t-b">"Done, refunded"</text></g><g id="v1-note" class="ve"><text x="380" y="214" text-anchor="middle" class="t-ok">Same model. The agent is allowed to use tools.</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Chatbot = answers. Agent = goal + actions + checks.</li><li>What makes an agent: tools, and freedom to choose the steps.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. Which one is an agent?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>A bot that explains the refund policy in nice words</button>
+      <button type="button" data-k="b"><b>B</b>A bot that looks up your order, starts the refund and confirms it</button>
+      <button type="button" data-k="c"><b>C</b>A bot that translates your message to Telugu</button>
+      <button type="button" data-k="d"><b>D</b>A bot that writes a poem about cakes</button></div>
+      <p class="why">Only B takes actions in other systems to reach a goal. A, C and D only produce text.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="d"><p class="q">2. What mainly turns a chatbot into an agent?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>A bigger model</button>
+      <button type="button" data-k="b"><b>B</b>A higher temperature</button>
+      <button type="button" data-k="c"><b>C</b>A longer system prompt</button>
+      <button type="button" data-k="d"><b>D</b>Tools it can use, and freedom to decide the steps</button></div>
+      <p class="why">The same model becomes an agent when it can call tools and choose what to do next.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T2 ============ -->
+<section id="t2">
+  <h2><span class="lessonno">02</span>The four parts of an agent</h2>
+  <p class="oneline">Every agent has the same four parts: a brain, instructions, tools and memory.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Part</th><th>What it is</th><th>At Sweet Crumbs</th><th>You learned it on</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Brain</strong></td><td>The LLM that reads and decides</td><td><code>openai/gpt-oss-20b</code> on Groq</td><td>Day 1</td></tr>
+      <tr><td><strong>Instructions</strong></td><td>The system prompt: role, facts, rules, format</td><td>"You are Sweet Crumbs' assistant…"</td><td>Day 2</td></tr>
+      <tr><td><strong>Tools</strong></td><td>Python functions it is allowed to call</td><td><code>get_price</code>, <code>is_open</code>, <code>log_order</code></td><td>Day 4 (tomorrow)</td></tr>
+      <tr><td><strong>Memory</strong></td><td>What it keeps between steps and messages</td><td>The chat history; later, saved facts</td><td>Day 2, Day 5</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sim" id="sim-pt">
+    <div class="sim-head"><span class="ttl">Build the bakery agent part by part</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="toggles">
+        <label><input type="checkbox" id="pt-brain" checked> <span><strong>Brain</strong> (LLM)</span></label>
+        <label><input type="checkbox" id="pt-ins"> <span><strong>Instructions</strong> (system prompt)</span></label>
+        <label><input type="checkbox" id="pt-tools"> <span><strong>Tools</strong> (functions)</span></label>
+        <label><input type="checkbox" id="pt-mem"> <span><strong>Memory</strong> (history)</span></label>
+      </div>
+      <div class="tablewrap"><table><thead><tr><th>Can it…</th><th></th></tr></thead><tbody id="pt-body"></tbody></table></div>
+      <div class="status" id="pt-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Coding assistants follow the same recipe: a model (brain), a set of rules for writing code (instructions), the ability to read files and run commands (tools), and the history of the task (memory). Different job, same four parts.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>new shop assistant</strong>: a smart <strong>brain</strong>, the owner's <strong>rulebook</strong>, <strong>hands</strong> and a phone to actually do things, and a <strong>notebook</strong> to remember customers. Remove any one and the job suffers.</p>
+  </div>
+  <div class="vid" data-vid="v2">
+    <div class="vid-head"><span class="ttl">Watch: assembling an agent</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 250" role="img" aria-label="Animation: brain, instructions, tools and memory are connected one by one to build the agent."><defs><marker id="mv2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v2-core" class="ve" ><rect x="300" y="96" width="160" height="64" rx="8" class="ba"/><text x="380.0" y="124.0" text-anchor="middle" class="t-b">Agent</text><text x="380.0" y="142.0" text-anchor="middle" class="t-s">Sweet Crumbs assistant</text></g><g id="v2-brain" class="ve" ><rect x="20" y="20" width="180" height="60" rx="8" class="bw"/><text x="110.0" y="46.0" text-anchor="middle" class="t-b">Brain</text><text x="110.0" y="64.0" text-anchor="middle" class="t-s">the LLM</text></g><g id="v2-ins" class="ve" ><rect x="560" y="20" width="180" height="60" rx="8" class="bw"/><text x="650.0" y="46.0" text-anchor="middle" class="t-b">Instructions</text><text x="650.0" y="64.0" text-anchor="middle" class="t-s">system prompt</text></g><g id="v2-tools" class="ve" ><rect x="20" y="176" width="180" height="60" rx="8" class="bw"/><text x="110.0" y="202.0" text-anchor="middle" class="t-b">Tools</text><text x="110.0" y="220.0" text-anchor="middle" class="t-s">get_price, log_order</text></g><g id="v2-mem" class="ve" ><rect x="560" y="176" width="180" height="60" rx="8" class="bw"/><text x="650.0" y="202.0" text-anchor="middle" class="t-b">Memory</text><text x="650.0" y="220.0" text-anchor="middle" class="t-s">chat history</text></g><g id="v2-c1" class="ve"><path class="ln" d="M200 50 H250 V110 H298" marker-end="url(#mv2)"/></g><g id="v2-c2" class="ve"><path class="ln" d="M560 50 H510 V110 H462" marker-end="url(#mv2)"/></g><g id="v2-c3" class="ve"><path class="ln" d="M200 206 H250 V146 H298" marker-end="url(#mv2)"/></g><g id="v2-c4" class="ve"><path class="ln" d="M560 206 H510 V146 H462" marker-end="url(#mv2)"/></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Brain + instructions + tools + memory.</li><li>Without tools, it can only talk. Without instructions, it guesses. Without memory, it forgets.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="c"><p class="q">1. In an agent, what are "tools"?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>The API keys</button>
+      <button type="button" data-k="b"><b>B</b>The libraries you install with pip</button>
+      <button type="button" data-k="c"><b>C</b>Functions the agent is allowed to call, like get_price</button>
+      <button type="button" data-k="d"><b>D</b>The model's training data</button></div>
+      <p class="why">Tools are ordinary functions you give the agent so it can do things (look up, save, send).</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="a"><p class="q">2. The bakery agent keeps forgetting which cake the customer asked for two messages ago. Which part is weak?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Memory</button>
+      <button type="button" data-k="b"><b>B</b>Tools</button>
+      <button type="button" data-k="c"><b>C</b>Brain</button>
+      <button type="button" data-k="d"><b>D</b>Format</button></div>
+      <p class="why">Remembering earlier messages is memory: the history must be sent with each call (Day 2).</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T3 ============ -->
+<section id="t3">
+  <h2><span class="lessonno">03</span>The agent loop: think → act → observe → repeat</h2>
+  <p class="oneline">An agent works in a loop: decide the next step, do it, look at the result, and repeat until the goal is reached.</p>
+  <p>This pattern is often called <strong>ReAct</strong> (<em>Re</em>ason + <em>Act</em>). In each round the model either says "I need to use a tool" (act) or "I have the final answer" (stop). Your code runs the tool and hands the result back (observe). The loop ends when the model gives a final answer, or when you stop it after too many rounds.</p>
+  <div class="sim" id="sim-lp">
+    <div class="sim-head"><span class="ttl">Watch the loop solve one customer question</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <figure style="margin:0">
+        <svg class="dg flow" viewBox="0 0 760 200" role="img" aria-label="Agent loop: goal, then think, act and observe in a circle, and finally answer.">
+          <defs><marker id="lpm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+          <rect id="lp-goal" x="20" y="70" width="120" height="56" rx="8" class="bw"/><text x="80" y="95" text-anchor="middle" class="t-b">Goal</text><text x="80" y="113" text-anchor="middle" class="t-s">the question</text>
+          <rect id="lp-think" x="200" y="20" width="130" height="56" rx="8" class="b"/><text x="265" y="45" text-anchor="middle" class="t-b">Think</text><text x="265" y="63" text-anchor="middle" class="t-s">what next?</text>
+          <rect id="lp-act" x="400" y="20" width="130" height="56" rx="8" class="b"/><text x="465" y="45" text-anchor="middle" class="t-b">Act</text><text x="465" y="63" text-anchor="middle" class="t-s">call a tool</text>
+          <rect id="lp-obs" x="300" y="124" width="130" height="56" rx="8" class="b"/><text x="365" y="149" text-anchor="middle" class="t-b">Observe</text><text x="365" y="167" text-anchor="middle" class="t-s">read the result</text>
+          <rect id="lp-ans" x="600" y="70" width="140" height="56" rx="8" class="ba"/><text x="670" y="95" text-anchor="middle" class="t-b">Answer</text><text x="670" y="113" text-anchor="middle" class="t-s">goal reached</text>
+          <path class="ln" d="M140 98 H170 V48 H198" marker-end="url(#lpm)"/>
+          <line class="ln" x1="330" y1="48" x2="398" y2="48" marker-end="url(#lpm)"/>
+          <path class="ln" d="M465 76 V152 H432" marker-end="url(#lpm)"/>
+          <path class="ln" d="M300 152 H265 V78" marker-end="url(#lpm)"/>
+          <path class="ln" d="M330 34 H560 V98 H598" marker-end="url(#lpm)"/><text x="572" y="62" class="t-s">done?</text>
+        </svg>
+      </figure>
+      <div class="row"><button class="btn" type="button" id="lp-next">Next step</button><button class="btn ghost" type="button" id="lp-reset">Reset</button></div>
+      <div class="hist" id="lp-log"></div>
+      <div class="status" id="lp-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p><strong>Google Maps</strong> works in a loop too: plan a route, drive, see traffic, re-plan. An agent does the same with tools: try, look at the result, adjust. That's why an agent can handle questions nobody wrote exact steps for.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p><strong>Cooking without a fixed recipe.</strong> Decide (add salt), act (add it), taste (observe), decide again, until it tastes right. You don't plan every pinch in advance.</p>
+  </div>
+  <div class="vid" data-vid="v3">
+    <div class="vid-head"><span class="ttl">Watch: one question, round the loop</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 270" role="img" aria-label="Animation: the agent thinks, calls get_price, observes 500, thinks again and answers 1,500."><defs><marker id="mv3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v3-goal" class="ve" ><rect x="20" y="30" width="220" height="56" rx="8" class="bw"/><text x="130.0" y="54.0" text-anchor="middle" class="t-b">Goal</text><text x="130.0" y="72.0" text-anchor="middle" class="t-s">3 eggless plum cakes, price?</text></g><g id="v3-think" class="ve" ><rect x="300" y="30" width="180" height="56" rx="8" class="b"/><text x="390.0" y="54.0" text-anchor="middle" class="t-b">Think</text><text x="390.0" y="72.0" text-anchor="middle" class="t-s">what do I need?</text></g><g id="v3-act" class="ve" ><rect x="520" y="30" width="180" height="56" rx="8" class="b"/><text x="610.0" y="54.0" text-anchor="middle" class="t-b">Act</text><text x="610.0" y="72.0" text-anchor="middle" class="t-s">get_price("plum cake")</text></g><g id="v3-obs" class="ve" ><rect x="520" y="140" width="180" height="56" rx="8" class="b"/><text x="610.0" y="164.0" text-anchor="middle" class="t-b">Observe</text><text x="610.0" y="182.0" text-anchor="middle" class="t-s">result: 500</text></g><g id="v3-think2" class="ve" ><rect x="300" y="140" width="180" height="56" rx="8" class="b"/><text x="390.0" y="164.0" text-anchor="middle" class="t-b">Think</text><text x="390.0" y="182.0" text-anchor="middle" class="t-s">3 × 500 = 1500</text></g><g id="v3-a1" class="ve"><line class="ln" x1="240" y1="58" x2="298" y2="58" marker-end="url(#mv3)"/></g><g id="v3-a2" class="ve"><line class="ln" x1="480" y1="58" x2="518" y2="58" marker-end="url(#mv3)"/></g><g id="v3-a3" class="ve"><line class="ln" x1="610" y1="86" x2="610" y2="138" marker-end="url(#mv3)"/></g><g id="v3-a4" class="ve"><line class="ln" x1="520" y1="168" x2="482" y2="168" marker-end="url(#mv3)"/></g><g id="v3-a5" class="ve"><path class="ln" d="M300 168 H180 V208" marker-end="url(#mv3)"/></g><g id="v3-ans" class="ve" ><rect x="20" y="210" width="400" height="46" rx="8" class="ba"/><text x="220.0" y="238.0" text-anchor="middle" class="t-b">"3 eggless plum cakes = Rs 1,500"</text></g><g id="v3-ctr" class="ve"><text x="740" y="236" text-anchor="end" class="t-s">2 rounds · 1 tool call</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Think → act → observe → repeat, until a final answer.</li><li>The model decides; <strong>your code</strong> runs the tools. Always set a limit on rounds.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. In the agent loop, who actually runs the tool (for example, <code>get_price</code>)?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>The model runs it on its own server</button>
+      <button type="button" data-k="b"><b>B</b>Your code runs it, then sends the result back to the model</button>
+      <button type="button" data-k="c"><b>C</b>The customer runs it</button>
+      <button type="button" data-k="d"><b>D</b>Nobody; the model guesses the result</button></div>
+      <p class="why">The model only asks for a tool. Your program runs the function and returns the result. (Day 4 shows this in code.)</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. When does the agent loop stop?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>After exactly one tool call</button>
+      <button type="button" data-k="b"><b>B</b>Never; it runs forever</button>
+      <button type="button" data-k="c"><b>C</b>When the model gives a final answer, or when a round limit is reached</button>
+      <button type="button" data-k="d"><b>D</b>When the temperature reaches 0</button></div>
+      <p class="why">The model decides it's done, and you keep a safety limit so a confused agent can't loop forever.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T4 ============ -->
+<section id="t4">
+  <h2><span class="lessonno">04</span>Three levels of AI</h2>
+  <p class="oneline">Traditional software follows fixed rules. Generative AI creates content. Agentic AI uses that ability to take actions.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Level</th><th>What it does</th><th>Who decides the steps</th><th>Bakery example</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Traditional software</strong></td><td>Follows rules a programmer wrote</td><td>The programmer, in advance</td><td>A bill calculator: price × quantity</td></tr>
+      <tr><td><strong>Generative AI</strong></td><td>Creates text, images or code when asked</td><td>The person asking, one request at a time</td><td>"Write a Diwali offer post" → a draft</td></tr>
+      <tr><td><strong>Agentic AI</strong></td><td>Plans and acts with tools to reach a goal</td><td>The model, step by step</td><td>Reads an order, checks the price, logs it, drafts a confirmation</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sim" id="sim-lv">
+    <div class="sim-head"><span class="ttl">Sort each example into its level</span><span class="live">Live</span></div>
+    <div class="sim-body"><div id="lv-list"></div><div class="status" id="lv-st">Pick a level for each example.</div></div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Most companies use all three side by side. The payment gateway is traditional software (it must be exact). Marketing uses generative AI for drafts. Support is moving to agents that can look things up and act, with a human approving anything risky.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>calculator</strong> (always the same steps), a <strong>friend who writes well</strong> (gives you a draft when you ask), and an <strong>intern</strong> (you give a goal; they figure out the steps and report back).</p>
+  </div>
+  <div class="vid" data-vid="v4">
+    <div class="vid-head"><span class="ttl">Watch: three levels of AI</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 256" role="img" aria-label="Animation: three rising steps from traditional software to generative AI to agentic AI, with freedom, cost and risk increasing."><defs><marker id="mv4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v4-l1" class="ve" ><rect x="20" y="170" width="220" height="70" rx="8" class="b"/><text x="130.0" y="201.0" text-anchor="middle" class="t-b">Traditional</text><text x="130.0" y="219.0" text-anchor="middle" class="t-s">GST calculator · fixed rules</text></g><g id="v4-l2" class="ve" ><rect x="270" y="100" width="220" height="70" rx="8" class="bw"/><text x="380.0" y="131.0" text-anchor="middle" class="t-b">Generative</text><text x="380.0" y="149.0" text-anchor="middle" class="t-s">writes a Diwali post</text></g><g id="v4-l3" class="ve" ><rect x="520" y="30" width="220" height="70" rx="8" class="ba"/><text x="630.0" y="61.0" text-anchor="middle" class="t-b">Agentic</text><text x="630.0" y="79.0" text-anchor="middle" class="t-s">reads, checks, saves, drafts</text></g><g id="v4-a1" class="ve"><line class="ln" x1="240" y1="190" x2="268" y2="150" marker-end="url(#mv4)"/></g><g id="v4-a2" class="ve"><line class="ln" x1="490" y1="120" x2="518" y2="80" marker-end="url(#mv4)"/></g><g id="v4-ax" class="ve"><text x="740" y="230" text-anchor="end" class="t-s">more freedom → more cost and risk</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Traditional = fixed rules. Generative = creates. Agentic = creates <em>and</em> acts.</li><li>Higher level = more freedom, but also more cost and more risk.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="a"><p class="q">1. A GST calculator that always computes 18% of the bill is…</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Traditional software</button>
+      <button type="button" data-k="b"><b>B</b>Generative AI</button>
+      <button type="button" data-k="c"><b>C</b>Agentic AI</button>
+      <button type="button" data-k="d"><b>D</b>A foundation model</button></div>
+      <p class="why">Fixed rule, same steps every time, written by a programmer: traditional software.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. What is the key difference between generative AI and agentic AI?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Agentic AI uses a different kind of model</button>
+      <button type="button" data-k="b"><b>B</b>Generative AI can't write text</button>
+      <button type="button" data-k="c"><b>C</b>Agentic AI decides steps and takes actions with tools; generative AI only produces content</button>
+      <button type="button" data-k="d"><b>D</b>There is no difference</button></div>
+      <p class="why">The same model can do both. Agentic means it is also allowed to plan and act.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T5 ============ -->
+<section id="t5">
+  <h2><span class="lessonno">05</span>Agent or not? Pick the simplest thing that works</h2>
+  <p class="oneline">Use an agent only when the steps can't be known in advance. If you can write the steps down, plain code is cheaper, faster and safer.</p>
+  <p>Agents are exciting, but every extra round of thinking costs time and tokens, and more freedom means more ways to go wrong. Engineers ask three questions, in order:</p>
+  <ol>
+    <li><strong>Can I write the exact steps?</strong> → write normal code (no AI).</li>
+    <li><strong>Do I just need text understood or written once?</strong> → one LLM call (Level 1).</li>
+    <li><strong>Must it decide which steps to take, using tools?</strong> → an agent.</li>
+  </ol>
+  <div class="sim" id="sim-an">
+    <div class="sim-head"><span class="ttl">You decide: plain code, one LLM call, or an agent?</span><span class="live">Live</span></div>
+    <div class="sim-body"><div id="an-list"></div><div class="status" id="an-st">Choose for each task.</div></div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Teams that build reliable AI products often start with the simplest option and add agent freedom only where it clearly helps. At Sweet Crumbs, calculating a bill stays plain Python; writing a festival post is one LLM call; handling an unclear customer order is a job for the agent.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>You don't hire a <strong>manager</strong> to switch on a fan. Fixed jobs need a switch (code); creative one-off jobs need a writer (one LLM call); only open-ended jobs need someone who plans (an agent).</p>
+  </div>
+  <div class="vid" data-vid="v5">
+    <div class="vid-head"><span class="ttl">Watch: choosing the simplest option</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 244" role="img" aria-label="Animation: a decision flow. If the steps are known, use plain code; otherwise, if tools and decisions are needed, use an agent; if not, one LLM call."><defs><marker id="mv5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v5-task" class="ve" ><rect x="20" y="92" width="170" height="56" rx="8" class="b"/><text x="105.0" y="116.0" text-anchor="middle" class="t-b">A new task</text><text x="105.0" y="134.0" text-anchor="middle" class="t-s">for Sweet Crumbs</text></g><g id="v5-q1" class="ve"><polygon points="300,80 380,120 300,160 220,120" class="bw"/><text x="300" y="117" text-anchor="middle" class="t-b">Steps known?</text><text x="300" y="133" text-anchor="middle" class="t-s"> </text><line class="ln" x1="190" y1="120" x2="218" y2="120" marker-end="url(#mv5)"/></g><g id="v5-code" class="ve"><path class="ln" d="M300 80 V52" marker-end="url(#mv5)"/><text x="310" y="68" class="t-s">yes</text><rect x="230" y="10" width="140" height="40" rx="8" class="ba"/><text x="300" y="35" text-anchor="middle" class="t-b">Plain code</text></g><g id="v5-q2" class="ve"><line class="ln" x1="380" y1="120" x2="448" y2="120" marker-end="url(#mv5)"/><text x="400" y="112" class="t-s">no</text><polygon points="530,80 610,120 530,160 450,120" class="bw"/><text x="530" y="117" text-anchor="middle" class="t-b">Needs tools +</text><text x="530" y="133" text-anchor="middle" class="t-b">decisions?</text></g><g id="v5-one" class="ve"><path class="ln" d="M530 160 V188" marker-end="url(#mv5)"/><text x="540" y="180" class="t-s">no</text><rect x="460" y="190" width="140" height="40" rx="8" class="ba"/><text x="530" y="215" text-anchor="middle" class="t-b">One LLM call</text></g><g id="v5-agent" class="ve"><line class="ln" x1="610" y1="120" x2="638" y2="120" marker-end="url(#mv5)"/><text x="614" y="112" class="t-s">yes</text><rect x="640" y="100" width="100" height="40" rx="8" class="ba"/><text x="690" y="125" text-anchor="middle" class="t-b">Agent</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Known steps → code. One-off text → one call. Unknown steps + tools → agent.</li><li>Simpler = cheaper, faster, easier to test.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="a"><p class="q">1. "Add 18% GST to every bill" should be built as…</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Plain code</button>
+      <button type="button" data-k="b"><b>B</b>One LLM call</button>
+      <button type="button" data-k="c"><b>C</b>An agent</button>
+      <button type="button" data-k="d"><b>D</b>Three agents</button></div>
+      <p class="why">The steps are fixed and must be exact. Code never makes a maths mistake; an LLM might.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="d"><p class="q">2. Why not make everything an agent?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Agents can't use Python</button>
+      <button type="button" data-k="b"><b>B</b>Agents only work in English</button>
+      <button type="button" data-k="c"><b>C</b>Agents don't need prompts</button>
+      <button type="button" data-k="d"><b>D</b>They cost more, are slower and have more ways to go wrong</button></div>
+      <p class="why">Every round of thinking uses tokens and time, and freedom adds risk. Use agents where the freedom is worth it.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T6 ============ -->
+<section id="t6">
+  <h2><span class="lessonno">06</span>Why LangChain?</h2>
+  <p class="oneline">LangChain is a Python library that gives every model the same simple interface, plus ready-made pieces for prompts, tools, memory and agents.</p>
+  <p>On Day 1 you wrote the API call yourself with the <code>openai</code> library. That's fine for one call. But agents need tools, loops, memory and the ability to switch models, and writing all of that by hand is slow and easy to get wrong. LangChain provides these as tested building blocks, so you write less code.</p>
+  <div class="two">
+<pre><code class="py"># Day 1: raw API call
+from openai import OpenAI
+client = OpenAI(api_key=KEY,
+    base_url="https://api.groq.com/openai/v1")
+r = client.chat.completions.create(
+    model="openai/gpt-oss-20b",
+    messages=[{"role": "user",
+               "content": "Eggless available?"}])
+print(r.choices[0].message.content)</code></pre>
+<pre><code class="py"># Day 3: the same call with LangChain
+from langchain_groq import ChatGroq
+llm = ChatGroq(model="openai/gpt-oss-20b")
+
+
+reply = llm.invoke("Eggless available?")
+print(reply.content)</code></pre>
+  </div>
+  <div class="sim" id="sim-sw">
+    <div class="sim-head"><span class="ttl">Switch the model provider: what changes in your code?</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="opts" id="sw-o" role="group" aria-label="Provider"></div>
+      <div class="result" id="sw-code"></div>
+      <div class="status" id="sw-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Model prices and quality change every few months. A team using LangChain can test a cheaper or better model by changing a line or two, instead of rewriting the app. On Day 10 we use this to give Sweet Crumbs a backup model when Groq is down.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>universal travel adapter</strong>. Your laptop charger stays the same in every country; only the plug at the wall changes. LangChain is the adapter between your code and any model's "socket".</p>
+  </div>
+  <div class="vid" data-vid="v6">
+    <div class="vid-head"><span class="ttl">Watch: one adapter, many models</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 236" role="img" aria-label="Animation: your code connects to LangChain, which plugs into Groq, then OpenAI, then Gemini without changing your code."><defs><marker id="mv6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v6-code" class="ve" ><rect x="20" y="90" width="170" height="70" rx="8" class="b"/><text x="105.0" y="121.0" text-anchor="middle" class="t-b">Your code</text><text x="105.0" y="139.0" text-anchor="middle" class="t-s">prompt | llm | parser</text></g><g id="v6-plug" class="ve"><line class="ln" x1="190" y1="125" x2="268" y2="125" marker-end="url(#mv6)"/><rect x="270" y="90" width="170" height="70" rx="10" class="ba"/><text x="355" y="120" text-anchor="middle" class="t-b">LangChain</text><text x="355" y="140" text-anchor="middle" class="t-s">one interface</text></g><g id="v6-groq" class="ve"><rect x="560" y="30" width="180" height="50" rx="8" class="bw"/><text x="650" y="60" text-anchor="middle" class="t-b">Groq</text></g><g id="v6-oai" class="ve"><rect x="560" y="100" width="180" height="50" rx="8" class="bw"/><text x="650" y="130" text-anchor="middle" class="t-b">OpenAI</text></g><g id="v6-gem" class="ve"><rect x="560" y="170" width="180" height="50" rx="8" class="bw"/><text x="650" y="200" text-anchor="middle" class="t-b">Gemini</text></g><g id="v6-w1" class="ve"><path class="lna" d="M440 115 H500 V55 H558" marker-end="url(#mv6)"/></g><g id="v6-w2" class="ve"><path class="lna" d="M440 125 H558" marker-end="url(#mv6)"/></g><g id="v6-w3" class="ve"><path class="lna" d="M440 135 H500 V195 H558" marker-end="url(#mv6)"/></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>LangChain = one interface for many models + building blocks for agents.</li><li>Install with <code>pip install langchain langchain-groq</code>; the Groq piece reads <code>GROQ_API_KEY</code> from the environment.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. What is the main benefit of using LangChain for agents?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>It makes the model smarter</button>
+      <button type="button" data-k="b"><b>B</b>Ready-made building blocks and one interface for many models</button>
+      <button type="button" data-k="c"><b>C</b>It removes the need for an API key</button>
+      <button type="button" data-k="d"><b>D</b>It trains the model on your data</button></div>
+      <p class="why">LangChain doesn't change the model; it saves you from writing the plumbing (prompts, tools, loops, memory) yourself.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. You switch Sweet Crumbs from Groq to OpenAI in LangChain. What mostly changes?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>The whole program</button>
+      <button type="button" data-k="b"><b>B</b>The prompts and the tests</button>
+      <button type="button" data-k="c"><b>C</b>The import, the model line and the API key</button>
+      <button type="button" data-k="d"><b>D</b>Nothing at all, not even the key</button></div>
+      <p class="why">Like changing the wall plug: a different chat-model class, model name and key. The rest of your code stays the same.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T7 ============ -->
+<section id="t7">
+  <h2><span class="lessonno">07</span>LangChain basics: model, template, chain</h2>
+  <p class="oneline">Three pieces you'll use every day: a <strong>chat model</strong> you call with <code>invoke</code>, a <strong>prompt template</strong> with blanks to fill, and a <strong>chain</strong> that joins steps with the <code>|</code> pipe.</p>
+  <h3>① The chat model</h3>
+<pre><code class="py">llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.3)
+reply = llm.invoke([
+    ("system", "You are Sweet Crumbs' assistant. Answer in under 30 words."),
+    ("human",  "Do you make eggless cakes?"),
+])
+print(reply.content)     # the text, like response.choices[0].message.content on Day 1</code></pre>
+  <p>Messages can be simple <code>(role, text)</code> pairs. LangChain calls the user <strong>"human"</strong> and the model <strong>"ai"</strong>; they mean the same as user and assistant.</p>
+  <h3>② The prompt template</h3>
+<pre><code class="py">from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are the assistant for {business}. Answer in under 30 words."),
+    ("human",  "{question}"),
+])</code></pre>
+  <p>Words in <code>{curly braces}</code> are blanks, filled when you run it. One template can serve the bakery, a tuition centre or a salon.</p>
+  <h3>③ The chain</h3>
+<pre><code class="py">from langchain_core.output_parsers import StrOutputParser
+
+chain = prompt | llm | StrOutputParser()     # fill blanks → ask model → keep just the text
+answer = chain.invoke({"business": "Sweet Crumbs Home Bakery",
+                       "question": "Do you make eggless cakes?"})
+print(answer)</code></pre>
+  <p>The <code>|</code> pipe passes the output of one step into the next, like a conveyor belt. <code>StrOutputParser</code> takes the reply object and keeps just the text.</p>
+  <div class="sim" id="sim-tp">
+    <div class="sim-head"><span class="ttl">Fill the template, follow the chain</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="two">
+        <div><label for="tp-b">business</label><input type="text" id="tp-b" value="Sweet Crumbs Home Bakery"></div>
+        <div><label for="tp-q">question</label><input type="text" id="tp-q" value="Do you make eggless cakes?"></div>
+      </div>
+      <div class="row"><button class="btn" type="button" id="tp-go">chain.invoke(...)</button></div>
+      <div class="hist" id="tp-out"></div>
+      <div class="status" id="tp-st">Change the business name to your own and run it again: same template, new assistant.</div>
+    </div>
+  </div>
+  <div class="box warn"><span class="tag">Common trap</span><p>Because <code>{ }</code> means "blank" in a template, a system message containing real curly braces (for example JSON) causes an error about a missing variable. Write the menu as plain text lines, or double the braces <code>{{ }}</code>.</p></div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Mail merge in Word or a bulk WhatsApp greeting ("Dear {name}, happy Diwali!") works the same way as a template: one message, many fills. Chains are how bigger apps join steps: fill the prompt, ask the model, clean the answer, save it.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>printed form</strong> with blanks (the template) moving along a <strong>factory conveyor belt</strong> (the chain): one station fills the blanks, the next asks the model, the last one wraps up the text.</p>
+  </div>
+  <div class="vid" data-vid="v7">
+    <div class="vid-head"><span class="ttl">Watch: a chain is a conveyor belt</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 220" role="img" aria-label="Animation: an input dict moves along a conveyor through the prompt template, the chat model and the parser, producing a text answer."><defs><marker id="mv7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v7-belt" class="ve"><line x1="20" y1="200" x2="740" y2="200" stroke="currentColor" stroke-width="3" stroke-dasharray="10 8"/></g><g id="v7-in" class="ve" ><rect x="20" y="120" width="150" height="64" rx="8" class="b"/><text x="95.0" y="148.0" text-anchor="middle" class="t-b">Input dict</text><text x="95.0" y="166.0" text-anchor="middle" class="t-s">{business, question}</text></g><g id="v7-tp" class="ve" ><rect x="210" y="120" width="150" height="64" rx="8" class="b"/><text x="285.0" y="148.0" text-anchor="middle" class="t-b">Prompt template</text><text x="285.0" y="166.0" text-anchor="middle" class="t-s">fills the blanks</text></g><g id="v7-llm" class="ve" ><rect x="400" y="120" width="150" height="64" rx="8" class="ba"/><text x="475.0" y="148.0" text-anchor="middle" class="t-b">Chat model</text><text x="475.0" y="166.0" text-anchor="middle" class="t-s">writes a reply</text></g><g id="v7-par" class="ve" ><rect x="590" y="120" width="150" height="64" rx="8" class="b"/><text x="665.0" y="148.0" text-anchor="middle" class="t-b">Parser</text><text x="665.0" y="166.0" text-anchor="middle" class="t-s">keeps the text</text></g><g id="v7-a1" class="ve"><line class="ln" x1="170" y1="152" x2="208" y2="152" marker-end="url(#mv7)"/></g><g id="v7-a2" class="ve"><line class="ln" x1="360" y1="152" x2="398" y2="152" marker-end="url(#mv7)"/></g><g id="v7-a3" class="ve"><line class="ln" x1="550" y1="152" x2="588" y2="152" marker-end="url(#mv7)"/></g><g id="v7-out" class="ve"><rect x="430" y="30" width="310" height="44" rx="8" class="bw"/><text x="585" y="57" text-anchor="middle">"Yes! We can make that eggless."</text></g><g id="v7-pipe" class="ve"><text x="20" y="57" class="t-m">chain = prompt | llm | StrOutputParser()</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li><code>llm.invoke(messages)</code> → reply; text is in <code>.content</code>.</li><li>Template = blanks in <code>{ }</code>. Chain = <code>prompt | llm | parser</code>, run with <code>.invoke({...})</code>.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="d"><p class="q">1. In <code>chain = prompt | llm | StrOutputParser()</code>, what does the <code>|</code> do?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Means "or": use whichever works</button>
+      <button type="button" data-k="b"><b>B</b>Runs the three steps at the same time</button>
+      <button type="button" data-k="c"><b>C</b>Divides the output</button>
+      <button type="button" data-k="d"><b>D</b>Passes the output of each step into the next step</button></div>
+      <p class="why">It's a pipe: filled prompt → model → parser, like a conveyor belt.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="a"><p class="q">2. Your template is <code>"You work for {business}. Answer {question}"</code>. What must you pass to <code>chain.invoke</code>?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>A dict with keys "business" and "question"</button>
+      <button type="button" data-k="b"><b>B</b>Just the question as a string</button>
+      <button type="button" data-k="c"><b>C</b>The API key</button>
+      <button type="button" data-k="d"><b>D</b>Nothing; it fills itself</button></div>
+      <p class="why">Every blank needs a value: <code>{"business": "...", "question": "..."}</code>. A missing key raises an error.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T8 ============ -->
+<section id="t8">
+  <h2><span class="lessonno">08</span>Testing your assistant: tests.csv</h2>
+  <p class="oneline">Write down real customer questions and what a correct answer must contain. Run them all after every change.</p>
+  <p>Changing one line of a prompt can fix one answer and quietly break another. So we keep a small <strong>test file</strong>: each row is a question and a word or phrase the answer must include. A loop runs every question and prints PASS or FAIL. The <strong>pass rate</strong> tells you, in one number, whether a change made things better or worse.</p>
+<pre><code class="py">%%writefile tests.csv
+question,must_include
+How much is a plum cake?,500
+Do you make eggless cakes?,eggless
+Can I get a cake today evening?,24 hours
+Do you deliver to Kakinada?,check with the owner
+What is the price of 6 cupcakes?,480</code></pre>
+  <div class="sim" id="sim-tr">
+    <div class="sim-head"><span class="ttl">Run the tests, fix the prompt, run again</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="tr-v2"> Use prompt v2 (added the 24-hour fact and the "check with the owner" rule)</label><button class="btn" type="button" id="tr-go">Run tests</button></div>
+      <div class="tablewrap"><table><thead><tr><th>Question</th><th>Must include</th><th>Bot answer (typical)</th><th>Result</th></tr></thead><tbody id="tr-body"></tbody></table></div>
+      <div class="stats"><div class="stat"><b id="tr-rate">–</b><span>pass rate</span></div></div>
+      <div class="status" id="tr-st">Run with prompt v1 first.</div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Software teams run automatic tests before every release. AI teams do the same with sets of example questions, often called <strong>evals</strong>. On Day 11 (capstone) your system must pass 20 real customer messages; that test set starts growing today.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>practice test with an answer key</strong> before the real exam. You don't wait for the exam (real customers) to find out what you got wrong.</p>
+  </div>
+  <div class="vid" data-vid="v8">
+    <div class="vid-head"><span class="ttl">Watch: test, fix, test again</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 236" role="img" aria-label="Animation: five test questions run; two fail, giving 3 out of 5; the prompt is fixed and all five pass."><defs><marker id="mv8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v8-file" class="ve"><rect x="20" y="20" width="250" height="200" rx="10" class="b"/><text x="36" y="44" class="t-b">tests.csv</text></g><g id="v8-q1" class="ve"><text x="36" y="72" class="t-s">plum cake price → 500</text></g><g id="v8-r1" class="ve"><text id="v8-rt1" x="300" y="72" class="t-ok">PASS</text></g><g id="v8-q2" class="ve"><text x="36" y="102" class="t-s">eggless? → eggless</text></g><g id="v8-r2" class="ve"><text id="v8-rt2" x="300" y="102" class="t-ok">PASS</text></g><g id="v8-q3" class="ve"><text x="36" y="132" class="t-s">today evening? → 24 hours</text></g><g id="v8-r3" class="ve"><text id="v8-rt3" x="300" y="132" class="t-ok">PASS</text></g><g id="v8-q4" class="ve"><text x="36" y="162" class="t-s">deliver Kakinada? → check</text></g><g id="v8-r4" class="ve"><text id="v8-rt4" x="300" y="162" class="t-ok">PASS</text></g><g id="v8-q5" class="ve"><text x="36" y="192" class="t-s">6 cupcakes → 480</text></g><g id="v8-r5" class="ve"><text id="v8-rt5" x="300" y="192" class="t-ok">PASS</text></g><g id="v8-f3" class="ve"><text x="300" y="132" class="t-red">FAIL</text></g><g id="v8-f4" class="ve"><text x="300" y="162" class="t-red">FAIL</text></g><g id="v8-score" class="ve"><rect x="420" y="60" width="160" height="70" rx="10" class="ba"/><text id="v8-sc" x="500" y="104" text-anchor="middle" class="big">3/5</text></g><g id="v8-fix" class="ve"><rect x="420" y="150" width="320" height="44" rx="8" class="bw"/><text x="580" y="177" text-anchor="middle">Prompt v2: add 24-hour fact + "check" rule</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Each row: a real question + what the answer must contain.</li><li>Re-run all tests after every prompt change; watch the pass rate.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="c"><p class="q">1. Why run <em>all</em> the tests again after changing one line of the prompt?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>To use up free tokens</button>
+      <button type="button" data-k="b"><b>B</b>Because the API requires it</button>
+      <button type="button" data-k="c"><b>C</b>A fix for one answer can quietly break another</button>
+      <button type="button" data-k="d"><b>D</b>Tests only work when run together</button></div>
+      <p class="why">Prompts affect every answer. Re-running everything catches new breaks early. This is called regression testing.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="b"><p class="q">2. Which is the best test row for Sweet Crumbs?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>"Hello" → must include "hello"</button>
+      <button type="button" data-k="b"><b>B</b>"Can I get a cake today evening?" → must include "24 hours"</button>
+      <button type="button" data-k="c"><b>C</b>"Tell me a joke" → must include "joke"</button>
+      <button type="button" data-k="d"><b>D</b>"What is AI?" → must include "AI"</button></div>
+      <p class="why">B is a real customer question that checks a business rule. Good tests check the things that would cost the owner money if wrong.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ BUILD ============ -->
+<section id="build">
+  <h2>Today's build: the Sweet Crumbs assistant in LangChain</h2>
+  <p>Run these cells in order in a new Colab notebook. Your Groq key must be in Colab Secrets as <code>GROQ_API_KEY</code> (Day 1).</p>
+  <h3>Cell 1 · Setup</h3>
+<pre><code class="py">!pip install -q langchain langchain-groq
+
+import os
+from google.colab import userdata
+os.environ["GROQ_API_KEY"] = userdata.get("GROQ_API_KEY")   # LangChain reads it from here
+
+from langchain_groq import ChatGroq
+llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.3)</code></pre>
+  <h3>Cell 2 · The assistant: template + memory + chain</h3>
+<pre><code class="py">from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+
+SYSTEM = """ROLE:   You are the friendly assistant for Sweet Crumbs Home Bakery.
+FACTS:  Plum cake Rs 500. Chocolate cake Rs 650. Cupcake Rs 80 each.
+        Orders need 24 hours' notice. All cakes have eggless versions.
+RULES:  Never promise a delivery time or place. If it isn't in FACTS,
+        say "I'll check with the owner." Work out totals carefully.
+FORMAT: Under 50 words, friendly, English or Telugu matching the customer."""
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM),
+    MessagesPlaceholder("history"),          # the chat so far goes here
+    ("human", "{question}"),
+])
+chain = prompt | llm | StrOutputParser()
+
+history = []
+def ask(question: str) -> str:
+    answer = chain.invoke({"history": history, "question": question})
+    history.extend([("human", question), ("ai", answer)])
+    return answer
+
+print(ask("Hi, I'm Ravi. Do you make eggless cakes?"))
+print(ask("What's my name?"))</code></pre>
+  <h3>Cell 3 · Tests</h3>
+<pre><code class="py">import csv
+
+def run_tests(path: str = "tests.csv") -> None:
+    rows = list(csv.DictReader(open(path)))
+    passed = 0
+    for row in rows:
+        answer = chain.invoke({"history": [], "question": row["question"]})
+        ok = row["must_include"].lower() in answer.lower()
+        passed += ok
+        print("PASS" if ok else "FAIL", "|", row["question"], "→", answer[:70])
+    print(f"\n{passed}/{len(rows)} passed ({passed / len(rows):.0%})")
+
+run_tests()      # create tests.csv first with the %%writefile cell from topic 8</code></pre>
+  <h3>Cell 4 · Sneak peek: the same assistant as a LangChain agent</h3>
+<pre><code class="py">from langchain.agents import create_agent
+
+agent = create_agent(model=llm, tools=[], system_prompt=SYSTEM)   # tools come tomorrow
+result = agent.invoke({"messages": [{"role": "user", "content": "Do you make eggless cakes?"}]})
+print(result["messages"][-1].content)</code></pre>
+  <p>With an empty tool list it behaves like the chain above. On Day 4 we pass real tools like <code>get_price</code>, and the agent loop from topic 3 starts working by itself.</p>
+  <div class="box real"><span class="tag">Test it like a customer</span><p>Ask about eggless options, a same-day cake, delivery to your town and the price of 6 cupcakes. Then run the tests. A good first prompt should pass at least 4 of 5.</p></div>
+
+  <h3>Your 30%: do it yourself</h3>
+  <ol>
+    <li><strong>Your business:</strong> rewrite SYSTEM for the business you chose and change the <code>{business}</code> details.</li>
+    <li><strong>Your tests:</strong> turn your 10 customer questions into <code>tests.csv</code> with a <code>must_include</code> for each. Run them and write down the pass rate.</li>
+    <li><strong>Improve:</strong> change one thing in the prompt, run the tests again, and note whether the pass rate went up or down.</li>
+    <li><strong>Switch:</strong> change <code>temperature</code> to 1.0 and run the tests twice. Do the results change between runs?</li>
+    <li><strong>Agent or not:</strong> list three jobs in your business and label each: plain code, one LLM call, or agent.</li>
+  </ol>
+  <div class="box lens"><span class="tag">Before Day 4</span><p>Write two Python functions your business would need, for example a price lookup and an "is it available?" check, with type hints and docstrings (Day 2). Tomorrow they become the agent's tools.</p></div>
+</section>
+
+<section id="wrap">
+  <h2>Summary: Day 3 in one table</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Idea</th><th>One line</th><th>Analogy</th></tr></thead>
+    <tbody>
+      <tr><td>Chatbot vs agent</td><td>Answers vs acts to reach a goal</td><td>Receptionist vs personal assistant</td></tr>
+      <tr><td>Four parts</td><td>Brain, instructions, tools, memory</td><td>A new shop assistant</td></tr>
+      <tr><td>Agent loop</td><td>Think → act → observe → repeat</td><td>Cooking and tasting</td></tr>
+      <tr><td>Three levels</td><td>Fixed rules → creates → creates and acts</td><td>Calculator, writer, intern</td></tr>
+      <tr><td>Agent or not</td><td>Use the simplest option that works</td><td>Don't hire a manager to switch on a fan</td></tr>
+      <tr><td>LangChain</td><td>One interface for many models + building blocks</td><td>Universal travel adapter</td></tr>
+      <tr><td>Template and chain</td><td>Blanks in <code>{ }</code>; <code>prompt | llm | parser</code></td><td>Form on a conveyor belt</td></tr>
+      <tr><td>Tests</td><td>Real questions + must-include; re-run every change</td><td>Practice test with answer key</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <p>Ai Agents Workshop · Level 2 · Day 3 tutorial, prepared 18 November 2026. LangChain code follows the LangChain documentation as of November 2026 (<code>langchain-groq</code>, <code>create_agent</code>); libraries change quickly, so check versions before class. Bot answers in the simulators are typical examples, not live model output.</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pick(container,labels,onPick){
+  container.innerHTML=labels.map(function(l,i){return '<button class="opt" type="button" data-i="'+i+'">'+l+'</button>';}).join('');
+  var bs=container.querySelectorAll('.opt');
+  bs.forEach(function(b){b.addEventListener('click',function(){bs.forEach(function(x){x.classList.toggle('right',x===b);});onPick(+b.getAttribute('data-i'));});});
+  return bs;
+}
+
+/* ---------- Chatbot vs agent ---------- */
+(function(){
+  if(!$('cv-o'))return;
+  var R=[
+    {l:'"Cancel my order"',c:'To cancel an order, open the app, go to My Orders and tap Cancel. Refunds take 5–7 days.',a:['Looks up the customer’s latest order','Calls the cancel system','Checks the cancellation went through','Replies: “Done. Order #2417 is cancelled and Rs 500 will be refunded.”']},
+    {l:'"Book 2 plum cakes for Friday"',c:'Sure! Please message the owner with your name, the cakes you want and the date.',a:['Checks the price: Rs 500 × 2 = Rs 1,000','Checks Friday is at least 24 hours away','Saves the order in the Orders sheet','Asks the owner to approve, then confirms to the customer']},
+    {l:'"Is the bakery open on Sunday?"',c:'Most bakeries are open on Sundays, but timings may vary. Please check with the bakery.',a:['Calls is_open("Sunday")','Reads the result: open 10 am–6 pm','Replies with the real timing']}];
+  pick($('cv-o'),R.map(function(r){return r.l;}),draw)[0].click();
+  function draw(i){var r=R[i];
+    $('cv-c').innerHTML='<p style="margin:0">'+esc(r.c)+'</p><p class="note">Words only. The customer still has to do the work.</p>';
+    $('cv-a').innerHTML='<ol style="margin:0;padding-left:20px">'+r.a.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ol><p class="note">Actions with tools, then a confirmed answer.</p>';}
+})();
+
+/* ---------- Four parts ---------- */
+(function(){
+  if(!$('pt-body'))return;
+  var CAN=[
+    ['Understand a customer’s message',['brain']],
+    ['Speak as Sweet Crumbs and follow the owner’s rules',['brain','ins']],
+    ['Quote the real price of a plum cake',['brain','ins']],
+    ['Save the order to the Orders sheet',['brain','tools']],
+    ['Remember the customer’s name two messages later',['brain','mem']],
+    ['Take a full order end to end, safely',['brain','ins','tools','mem']]];
+  var ids={brain:'pt-brain',ins:'pt-ins',tools:'pt-tools',mem:'pt-mem'},name={brain:'Brain',ins:'Instructions',tools:'Tools',mem:'Memory'};
+  function draw(){
+    var have={};Object.keys(ids).forEach(function(k){have[k]=$(ids[k]).checked;});
+    var n=0;
+    $('pt-body').innerHTML=CAN.map(function(c){var miss=c[1].filter(function(k){return !have[k];});if(!miss.length)n++;
+      return '<tr><td>'+esc(c[0])+'</td><td>'+(miss.length?'✗ needs '+miss.map(function(k){return name[k];}).join(' + '):'✓ yes')+'</td></tr>';}).join('');
+    $('pt-st').innerHTML=n===CAN.length?'<strong>All four parts:</strong> a complete agent.':(!have.brain?'<strong>No brain:</strong> nothing works without the model.':'It can do '+n+' of '+CAN.length+' jobs. Tick more parts to see what each one adds.');
+  }
+  Object.keys(ids).forEach(function(k){$(ids[k]).addEventListener('change',draw);});
+  draw();
+})();
+
+/* ---------- Agent loop stepper ---------- */
+(function(){
+  if(!$('lp-next'))return;
+  var S=[
+    {n:'goal',r:'r-user',t:'Goal: “How much for 3 eggless plum cakes?”',s:'The customer’s question is the goal.'},
+    {n:'think',r:'r-system',t:'Think: I don’t know the price. I should use the get_price tool.',s:'Round 1. The model decides it needs a fact it doesn’t have.'},
+    {n:'act',r:'r-assistant',t:'Act: get_price("plum cake")',s:'The model asks for a tool. Your code runs the function.'},
+    {n:'obs',r:'r-system',t:'Observe: 500',s:'The result goes back to the model.'},
+    {n:'think',r:'r-system',t:'Think: Eggless is available for all cakes. 3 × 500 = 1500. I have enough to answer.',s:'Round 2. It checks whether the goal is reached.'},
+    {n:'ans',r:'r-assistant',t:'Answer: “3 eggless plum cakes are Rs 1,500. We need 24 hours’ notice. Shall I book them?”',s:'Goal reached, so the loop stops. Two rounds, one tool call.'}];
+  var k=0;
+  function hl(n){['goal','think','act','obs','ans'].forEach(function(x){$('lp-'+x).classList.toggle('on',x===n);});}
+  function reset(){k=0;$('lp-log').innerHTML='';hl('');$('lp-st').innerHTML='Press <strong>Next step</strong> to watch one question go round the loop.';$('lp-next').disabled=false;}
+  $('lp-next').addEventListener('click',function(){if(k>=S.length)return;var s=S[k];hl(s.n);
+    $('lp-log').insertAdjacentHTML('beforeend','<div class="'+s.r+' fresh">'+esc(s.t)+'</div>');$('lp-st').innerHTML=s.s;k++;if(k>=S.length)$('lp-next').disabled=true;});
+  $('lp-reset').addEventListener('click',reset);reset();
+})();
+
+/* ---------- Sorter helper ---------- */
+function sorter(listId,stId,items,labels,doneMsg){
+  var box=$(listId),right=0,answered=0;
+  box.innerHTML=items.map(function(it,i){return '<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div><strong>'+(i+1)+'.</strong> '+esc(it.t)+'</div><div class="opts" data-i="'+i+'">'+labels.map(function(l,j){return '<button class="opt" type="button" data-j="'+j+'">'+l+'</button>';}).join('')+'</div><div class="note" data-why="'+i+'"></div></div>';}).join('');
+  box.querySelectorAll('.opts').forEach(function(g){var i=+g.getAttribute('data-i'),it=items[i],done=false;
+    g.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){var j=+b.getAttribute('data-j');
+      g.querySelectorAll('.opt').forEach(function(x){x.classList.remove('right','wrong');});
+      g.querySelectorAll('.opt')[it.a].classList.add('right');if(j!==it.a)b.classList.add('wrong');
+      box.querySelector('[data-why="'+i+'"]').innerHTML=(j===it.a?'<strong>Yes.</strong> ':'<strong>Not quite.</strong> ')+esc(it.w);
+      if(!done){done=true;answered++;if(j===it.a)right++;}
+      $(stId).innerHTML=answered<items.length?answered+' of '+items.length+' answered.':'<strong>'+right+' of '+items.length+' right first time.</strong> '+doneMsg;
+    });});});
+}
+if($('lv-list'))sorter('lv-list','lv-st',[
+  {t:'A calculator that adds 18% GST to a bill',a:0,w:'Fixed rule written in advance.'},
+  {t:'"Write three Instagram captions for our new chocolate cake"',a:1,w:'It creates content for one request; it doesn’t act.'},
+  {t:'A bot that reads an order, checks stock, saves it and drafts a confirmation',a:2,w:'It plans and acts with tools to reach a goal.'},
+  {t:'An app that sends an SMS reminder exactly 24 hours before pickup',a:0,w:'A scheduled rule; no AI needed.'},
+  {t:'Summarise 20 customer reviews into five points',a:1,w:'One request, one piece of generated text.'},
+  {t:'A support assistant that finds your failed payment and starts the refund',a:2,w:'It looks things up and takes action.'}],
+  ['Traditional','Generative','Agentic'],'Fixed rules, creating, or creating + acting.');
+if($('an-list'))sorter('an-list','an-st',[
+  {t:'Total for 6 cupcakes at Rs 80 each',a:0,w:'Exact maths with known steps: plain code (6 × 80).'},
+  {t:'Write a Diwali offer message for the bakery',a:1,w:'One piece of creative text: one LLM call.'},
+  {t:'Reply to "need 2 plum + some cupcakes for sat, eggless?? how much" and log the order',a:2,w:'The steps depend on the message: understand it, look up prices, check the date, save. That’s an agent.'},
+  {t:'Send every order in the sheet to the owner at 9 pm',a:0,w:'A fixed scheduled job: plain code.'},
+  {t:'Translate the menu into Telugu',a:1,w:'One text task: one LLM call.'}],
+  ['Plain code','One LLM call','Agent'],'Agents only where the steps aren’t known in advance.');
+
+/* ---------- Provider switch ---------- */
+(function(){
+  if(!$('sw-o'))return;
+  var P=[
+    {l:'Groq',imp:'from langchain_groq import ChatGroq',ln:'llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.3)',key:'GROQ_API_KEY'},
+    {l:'OpenAI',imp:'from langchain_openai import ChatOpenAI',ln:'llm = ChatOpenAI(model="gpt-6-luna", temperature=0.3)',key:'OPENAI_API_KEY'},
+    {l:'Google Gemini',imp:'from langchain_google_genai import ChatGoogleGenerativeAI',ln:'llm = ChatGoogleGenerativeAI(model="<a current Gemini model>", temperature=0.3)',key:'GOOGLE_API_KEY'}];
+  pick($('sw-o'),P.map(function(p){return p.l;}),function(i){var p=P[i];
+    $('sw-code').innerHTML='<span style="color:var(--warm)">'+esc(p.imp)+'\n'+esc(p.ln)+'\n# key read from the '+p.key+' environment variable</span>\n\nprompt = ChatPromptTemplate.from_messages([...])   # unchanged\nchain  = prompt | llm | StrOutputParser()          # unchanged\nanswer = chain.invoke({"question": "Eggless available?"})  # unchanged';
+    $('sw-st').innerHTML='Only the highlighted lines changed. Everything after <code>llm = ...</code> stays the same. (Model names change often; check the provider’s list.)';})[0].click();
+})();
+
+/* ---------- Template + chain ---------- */
+(function(){
+  if(!$('tp-go'))return;
+  function go(){
+    var b=$('tp-b').value.trim()||'{business}',q=$('tp-q').value.trim()||'{question}';
+    var low=q.toLowerCase(),ans;
+    if(/eggless/.test(low))ans='Yes! '+b+' can make that eggless. Would you like to place an order?';
+    else if(/price|how much|cost/.test(low))ans='I’ll share the latest prices from '+b+' right away.';
+    else ans='Thanks for asking '+b+'! Let me help you with that.';
+    $('tp-out').innerHTML=
+      '<div class="r-system fresh"><strong>1 · prompt fills the blanks →</strong> system: You are the assistant for '+esc(b)+'. Answer in under 30 words.<br>human: '+esc(q)+'</div>'+
+      '<div class="r-user fresh"><strong>2 · llm replies →</strong> AIMessage(content="'+esc(ans)+'", ...)</div>'+
+      '<div class="r-assistant fresh"><strong>3 · parser keeps the text →</strong> "'+esc(ans)+'"</div>';
+  }
+  $('tp-go').addEventListener('click',go);go();
+})();
+
+/* ---------- Test runner ---------- */
+(function(){
+  if(!$('tr-go'))return;
+  var T=[
+    ['How much is a plum cake?','500','Our plum cake is Rs 500.','Our plum cake is Rs 500.'],
+    ['Do you make eggless cakes?','eggless','Yes, all our cakes come eggless!','Yes, all our cakes come eggless!'],
+    ['Can I get a cake today evening?','24 hours','Sure, we can have it ready this evening!','Orders need 24 hours’ notice, so tomorrow is the earliest.'],
+    ['Do you deliver to Kakinada?','check with the owner','Yes, we deliver across Kakinada.','I’ll check with the owner about Kakinada.'],
+    ['What is the price of 6 cupcakes?','480','6 cupcakes are Rs 480.','6 cupcakes are Rs 480.']];
+  function run(){
+    var v2=$('tr-v2').checked,p=0;
+    $('tr-body').innerHTML=T.map(function(t){var a=v2?t[3]:t[2],ok=a.toLowerCase().indexOf(t[1].toLowerCase())>=0;if(ok)p++;
+      return '<tr><td>'+esc(t[0])+'</td><td><code>'+esc(t[1])+'</code></td><td>'+esc(a)+'</td><td>'+(ok?'<strong style="color:var(--accent)">PASS</strong>':'<strong style="color:var(--danger)">FAIL</strong>')+'</td></tr>';}).join('');
+    $('tr-rate').textContent=Math.round(p/T.length*100)+'%';
+    $('tr-st').innerHTML=v2?'<strong>'+p+'/'+T.length+' passed.</strong> Adding one fact and one rule fixed both failures, and the three that already passed still pass. That’s what re-running everything proves.':'<strong>'+p+'/'+T.length+' passed.</strong> The two failures are exactly the kind that cost the owner money: a same-day promise and a delivery promise. Tick prompt v2 and run again.';
+  }
+  $('tr-go').addEventListener('click',run);
+})();
+})();
+
+</script>
+<script>
+window.VSCENES={
+ v1:[
+  {show:['req'],cap:'A customer types: “Cancel my order.” Let’s send it to a chatbot and to an agent.'},
+  {show:['req','l1','cb'],hl:['cb'],cap:'The chatbot answers with words: here’s how you can cancel it yourself.'},
+  {show:['req','l1','cb','l2','s1'],hl:['s1'],cap:'The agent starts working: first it finds the customer’s order.'},
+  {show:['req','l1','cb','l2','s1','sa1','s2'],hl:['s2'],cap:'Then it calls the cancel system.'},
+  {show:['req','l1','cb','l2','s1','sa1','s2','sa2','s3'],hl:['s3'],cap:'Then it checks that the cancellation really happened.'},
+  {show:['req','l1','cb','l2','s1','sa1','s2','sa2','s3','sa3','done'],hl:['done'],cap:'Only then does it reply: done, and the refund has started.'},
+  {show:['req','l1','cb','l2','s1','sa1','s2','sa2','s3','sa3','done','note'],cap:'Same model behind both. The agent is simply allowed to use tools and decide the steps.'}],
+ v2:[
+  {show:['core'],cap:'Let’s build the Sweet Crumbs agent piece by piece.'},
+  {show:['core','brain','c1'],hl:['brain'],cap:'Brain: the LLM. It reads messages and decides what to do.'},
+  {show:['core','brain','c1','ins','c2'],hl:['ins'],cap:'Instructions: the system prompt with the bakery’s role, facts, rules and format.'},
+  {show:['core','brain','c1','ins','c2','tools','c3'],hl:['tools'],cap:'Tools: functions it may call, like get_price and log_order. These are its hands.'},
+  {show:['core','brain','c1','ins','c2','tools','c3','mem','c4'],hl:['mem'],cap:'Memory: the chat history, so it remembers the customer.'},
+  {show:['core','brain','c1','ins','c2','tools','c3','mem','c4'],hl:['core'],cap:'Four parts, one agent. Every agent you build in this workshop has exactly these four.'}],
+ v3:[
+  {show:['goal'],hl:['goal'],cap:'The goal: “How much for 3 eggless plum cakes?”'},
+  {show:['goal','a1','think'],hl:['think'],cap:'Think: I don’t know the price, so I need a tool.'},
+  {show:['goal','a1','think','a2','act'],hl:['act'],cap:'Act: ask for get_price("plum cake"). Your code runs it.'},
+  {show:['goal','a1','think','a2','act','a3','obs'],hl:['obs'],cap:'Observe: the tool returns 500.'},
+  {show:['goal','a1','think','a2','act','a3','obs','a4','think2'],hl:['think2'],cap:'Think again: 3 × 500 = 1,500. All cakes come eggless. That’s enough to answer.'},
+  {show:['goal','a1','think','a2','act','a3','obs','a4','think2','a5','ans','ctr'],hl:['ans'],cap:'Answer, and the loop stops. Two rounds, one tool call. Harder questions just take more rounds.'}],
+ v4:[
+  {show:['l1'],hl:['l1'],cap:'Level 1, traditional software: a programmer writes fixed rules, like a GST calculator.'},
+  {show:['l1','a1','l2'],hl:['l2'],cap:'Level 2, generative AI: it creates content when asked, like a Diwali offer post.'},
+  {show:['l1','a1','l2','a2','l3'],hl:['l3'],cap:'Level 3, agentic AI: given a goal, it plans and acts: reads the order, checks, saves, drafts a reply.'},
+  {show:['l1','a1','l2','a2','l3','ax'],cap:'Each step up gives more freedom, but also more cost and more risk. Real products mix all three.'}],
+ v5:[
+  {show:['task'],cap:'A new job comes in. Which tool should do it?'},
+  {show:['task','q1'],hl:['task'],cap:'First question: can you write down the exact steps?'},
+  {show:['task','q1','code'],cap:'Yes? Then write plain code. It’s exact, fast and free, like adding GST.'},
+  {show:['task','q1','code','q2'],cap:'No? Ask: does it need tools and decisions along the way?'},
+  {show:['task','q1','code','q2','one'],cap:'No: one LLM call is enough, like writing a festival post or translating the menu.'},
+  {show:['task','q1','code','q2','one','agent'],hl:['agent'],cap:'Yes: now an agent is worth it, like handling an unclear order that needs prices, dates and saving.'}],
+ v6:[
+  {show:['code'],cap:'Your code: a prompt, a model, a parser.'},
+  {show:['code','plug'],hl:['plug'],cap:'LangChain sits in between, like a universal travel adapter.'},
+  {show:['code','plug','groq','oai','gem','w2'],hl:['oai'],cap:'Plug it into OpenAI…'},
+  {show:['code','plug','groq','oai','gem','w1'],hl:['groq'],cap:'…or Groq, which we use in class…'},
+  {show:['code','plug','groq','oai','gem','w3'],hl:['gem'],cap:'…or Gemini. Only the import and one line change; your prompts, chains and tests stay the same.'}],
+ v7:[
+  {show:['belt','in','pipe'],hl:['in'],cap:'A chain is a conveyor belt. It starts with your inputs: the business name and the question.'},
+  {show:['belt','in','pipe','a1','tp'],hl:['tp'],cap:'The prompt template fills its blanks and builds the messages.'},
+  {show:['belt','in','pipe','a1','tp','a2','llm'],hl:['llm'],cap:'The chat model reads them and writes a reply object.'},
+  {show:['belt','in','pipe','a1','tp','a2','llm','a3','par'],hl:['par'],cap:'The parser keeps only the text.'},
+  {show:['belt','in','pipe','a1','tp','a2','llm','a3','par','out'],hl:['out'],cap:'Out comes a plain answer. One line of code, prompt | llm | parser, runs all of this.'}],
+ v8:[
+  {show:['file','q1','q2','q3','q4','q5'],cap:'Five real customer questions, each with what a correct answer must include.'},
+  {show:['file','q1','q2','q3','q4','q5','r1','r2','f3','f4','r5'],cap:'Run them all. Two fail: a same-day promise and a delivery promise.'},
+  {show:['file','q1','q2','q3','q4','q5','r1','r2','f3','f4','r5','score'],txt:{sc:'3/5'},hl:['score'],cap:'Pass rate: 3 out of 5. Now we know exactly what to fix.'},
+  {show:['file','q1','q2','q3','q4','q5','score','fix'],txt:{sc:'3/5'},hl:['fix'],cap:'Fix the prompt: add the 24-hour fact and the “check with the owner” rule.'},
+  {show:['file','q1','q2','q3','q4','q5','r1','r2','r3','r4','r5','score','fix'],txt:{sc:'5/5'},hl:['score'],cap:'Run everything again: 5 out of 5, and nothing that passed before broke. Test, fix, test again.'}]
+};
+
+/* ---------- Animated videos ---------- */
+(function(){
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var S=window.VSCENES;
+function fmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
+document.querySelectorAll('.vid').forEach(function(box){
+  var id=box.getAttribute('data-vid'),sc=S[id];if(!sc)return;
+  var svg=box.querySelector('svg'),cap=box.querySelector('.vid-cap'),btn=box.querySelector('.vid-play'),prog=box.querySelector('.vid-prog'),bar=prog.firstElementChild,tm=box.querySelector('.vid-time'),voice=box.querySelector('.vid-voice');
+  var dur=sc.map(function(s){return Math.max(3.2,s.cap.length/16);}),total=dur.reduce(function(a,b){return a+b;},0);
+  var starts=[],acc=0;dur.forEach(function(d){starts.push(acc);acc+=d;});
+  var els=svg.querySelectorAll('[id^="'+id+'-"]'),orig={};
+  els.forEach(function(e){if(e.tagName==='text')orig[e.id]=e.textContent;});
+  function el(k){var p=k.split('>');var e=svg.querySelector('#'+id+'-'+p[0]);return p[1]&&e?e.querySelector(p[1]):e;}
+  var cur=-1,t=0,playing=false,last=0,raf=null;
+  function apply(i){
+    if(i===cur)return;cur=i;var s=sc[i];
+    svg.querySelectorAll('.ve').forEach(function(e){var k=e.id.slice(id.length+1);e.classList.toggle('show',s.show.indexOf(k)>=0);});
+    svg.querySelectorAll('.on').forEach(function(e){e.classList.remove('on');});
+    (s.hl||[]).forEach(function(k){var e=el(k);if(!e)return;var r=e.tagName==='rect'?e:e.querySelector('rect');if(r)r.classList.add('on');});
+    svg.querySelectorAll('[data-t0]').forEach(function(e){e.style.transform=e.getAttribute('data-t0');});
+    Object.keys(orig).forEach(function(k){var e=svg.querySelector('#'+k);if(e)e.textContent=orig[k];});
+    for(var j=0;j<=i;j++){var m=sc[j].mv||{},x=sc[j].txt||{};
+      Object.keys(m).forEach(function(k){var e=el(k);if(e)e.style.transform=m[k];});
+      Object.keys(x).forEach(function(k){var e=el(k);if(e)e.textContent=x[k];});}
+    cap.textContent=s.cap;
+    if(voice.checked&&playing&&window.speechSynthesis){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.cap);u.lang='en-IN';u.rate=1.02;speechSynthesis.speak(u);}catch(e){}}
+  }
+  function idx(tt){for(var i=starts.length-1;i>=0;i--){if(tt>=starts[i])return i;}return 0;}
+  function draw(){bar.style.width=(t/total*100)+'%';tm.textContent=fmt(t)+' / '+fmt(total);}
+  function frame(now){if(!playing)return;t+=(now-last)/1000;last=now;
+    if(t>=total){t=total;draw();pause();btn.textContent='Replay';return;}
+    apply(idx(t));draw();raf=requestAnimationFrame(frame);}
+  function play(){if(t>=total){t=0;cur=-1;}playing=true;btn.textContent='Pause';last=performance.now();apply(idx(t));raf=requestAnimationFrame(frame);}
+  function pause(){playing=false;if(raf)cancelAnimationFrame(raf);if(btn.textContent==='Pause')btn.textContent='Play';try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
+  btn.addEventListener('click',function(){playing?pause():play();});
+  prog.addEventListener('click',function(ev){var r=prog.getBoundingClientRect();t=Math.min(total-0.01,Math.max(0,(ev.clientX-r.left)/r.width*total));cur=-1;apply(idx(t));draw();if(!playing)btn.textContent='Play';});
+  voice.addEventListener('change',function(){if(!voice.checked){try{speechSynthesis.cancel();}catch(e){}}});
+  draw();
+});
+})();
+
+/* ---------- MCQ quiz ---------- */
+(function(){
+  var all=document.querySelectorAll('.mcq'),right=0;
+  var sn=document.getElementById('sc-n'),sb=document.getElementById('sc-bar');
+  document.getElementById('sc-t').textContent=all.length;
+  function upd(){sn.textContent=right;sb.style.width=(right/all.length*100)+'%';}
+  all.forEach(function(q){
+    var ans=q.getAttribute('data-ans'),bs=q.querySelectorAll('.choices button'),why=q.querySelector('.why'),scored=false,base=why.innerHTML;
+    bs.forEach(function(b){b.addEventListener('click',function(){
+      var k=b.getAttribute('data-k'),ok=k===ans;
+      bs.forEach(function(x){x.disabled=true;x.classList.toggle('right',x.getAttribute('data-k')===ans);});
+      if(!ok)b.classList.add('wrong');
+      why.innerHTML=(ok?'<strong>Correct.</strong> ':'<strong>Not quite.</strong> ')+base;
+      q.classList.add('done');
+      if(ok&&!scored){scored=true;right++;upd();}
+    });});
+    q.querySelector('.retry').addEventListener('click',function(){bs.forEach(function(x){x.disabled=false;x.classList.remove('right','wrong');});q.classList.remove('done');});
+  });
+  upd();
+})();
+
+</script>
+<script>
+// Tiny Python highlighter: comments, strings, keywords, numbers.
+(function(){
+  var KW=/\b(import|from|def|return|class|if|else|elif|for|in|while|try|except|as|with|None|True|False|print|lambda|is|not|and|or|raise|self)\b/;
+  document.querySelectorAll('pre code.py').forEach(function(el){
+    var src=el.textContent, out='', re=/(#[^\n]*)|("""[\s\S]*?"""|f?"[^"\n]*"|f?'[^'\n]*')|\b(import|from|def|return|class|if|else|elif|for|in|while|try|except|as|with|None|True|False|print|lambda|is|not|and|or|raise|self)\b|\b(\d+(?:\.\d+)?)\b/g, last=0, m;
+    function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    while((m=re.exec(src))){
+      out+=esc(src.slice(last,m.index));
+      var cls=m[1]?'c':m[2]?'s':m[3]?'k':'n';
+      out+='<span class="'+cls+'">'+esc(m[0])+'</span>';
+      last=re.lastIndex;
+    }
+    out+=esc(src.slice(last));
+    el.innerHTML=out;
+  });
+})();
+</script>
+</body>
+</html>
